@@ -1,5 +1,7 @@
 // Save data, derived stats, items and economy formulas.
-import { CHAPTERS, CLASSES, OWNER, QUESTS, RM, SLOTS, WT, type Gender, type Quest, type SlotId, type WeaponType } from './data';
+import { CLASSES, OWNER, QUESTS, RM, SLOTS, WT, type Gender, type Quest, type SlotId, type WeaponType } from './data';
+import { locate } from './acts';
+export { stageLabel } from './acts';
 
 export interface Item {
   id: number; slot: SlotId; r: number; lv: number; pow: number;
@@ -10,12 +12,13 @@ export interface Save {
   atkL: number; hpL: number; spdL: number; hp: number;
   cls: string | null; g: Gender | null; eq: Partial<Record<SlotId, Item>>; inv: Item[]; nid: number;
   auto: boolean; bossFail: boolean; last: number; q: number; qp: number; skL: number[]; bm: number;
+  /** highest act index whose story card was shown */ seenAct: number;
 }
 
 const KEY = 'yomi-save-2';
 export function fresh(): Save {
   return { gold: 0, soul: 0, lvl: 1, xp: 0, stage: 1, best: 1, kills: 0, atkL: 0, hpL: 0, spdL: 0, hp: 100, cls: null, g: null,
-    eq: {}, inv: [], nid: 1, auto: true, bossFail: false, last: Date.now(), q: 0, qp: 0, skL: [0, 0, 0], bm: 1 };
+    eq: {}, inv: [], nid: 1, auto: true, bossFail: false, last: Date.now(), q: 0, qp: 0, skL: [0, 0, 0], bm: 1, seenAct: -1 };
 }
 function load(): Save {
   let s: Save | null = null;
@@ -34,9 +37,9 @@ export const rt = { t: 0 };
 export const buffs: Record<string, number> = {};
 export const buffActive = (n: string) => !!buffs[n] && buffs[n] > rt.t;
 
-export const chap = () => CHAPTERS[Math.floor((S.stage - 1) / 10) % CHAPTERS.length];
+/** act, zone and loop of the current stage */
+export const here = () => locate(S.stage);
 export const cls = () => CLASSES.find(c => c.id === S.cls) || CLASSES[0];
-export const stageLabel = (s: number) => (Math.floor((s - 1) / 10) + 1) + '-' + ((s - 1) % 10 + 1);
 
 export function fmt(n: number) {
   n = Math.floor(n); if (n < 1000) return '' + n;

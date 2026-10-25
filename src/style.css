@@ -153,3 +153,15 @@ canvas#doll{width:100%;max-width:100%;aspect-ratio:1/1.2;display:block;border-ra
 .cls b{font-family:var(--f-display);font-weight:400;font-size:1.1rem;display:block}
 .cls small{color:var(--mist);display:block;font-size:.8rem}
 .cls i{font-style:normal;color:var(--sakura);font-size:.75rem;display:block;margin-top:2px}
+
+/* act story card */
+.intro{display:grid;gap:10px;padding:18px 16px;border-radius:14px;border:1px solid #3a3350;
+  background:radial-gradient(circle at 88% 9%,var(--moon) 0 24px,transparent 26px),linear-gradient(rgba(8,10,18,.5),rgba(8,10,18,.78)),linear-gradient(180deg,var(--sky0),var(--sky1));
+  box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.intro h2{padding-right:56px}
+.intro p{color:#efe7d4;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.intro ul{margin:0;padding:10px 12px 10px 26px;background:rgba(8,10,18,.55);border-radius:10px;display:grid;gap:4px;color:var(--mist);font-size:.88rem}
+.intro .cta{justify-self:stretch;background:var(--gold);color:#1a1410;font-weight:700;min-height:46px}
+.acts li small{color:var(--mist);font-size:.78rem}
+.acts li.locked{opacity:.5}
+.acts button.mini{display:block;margin-top:4px;padding:3px 10px;font-size:.75rem;min-height:28px}

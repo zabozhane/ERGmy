@@ -1,8 +1,9 @@
 // DOM interface: top bar, quest, skills bar, tabs (growth, gear, skills, scroll) and hero/class picker.
-import { CHAPTERS, CLASSES, HERO, RC, RM, RN, SLOTS, type Gender, type SlotId } from '../data';
+import { CLASSES, HERO, RC, RM, RN, SLOTS, type Gender, type SlotId } from '../data';
+import { ACTS, ACT_STAGES } from '../acts';
 import {
-  S, atk, bulk, chap, cls, critCh, cdMul, equip, fmt, genItem, goldMul, isUpgrade, itemKj, itemName, lvlOf, MAXL, maxHp,
-  power, qProg, qReward, quest, resetSave, save, score, sellVal, skCost, skF, stageLabel, xpNeed, type Item, type TrainKey,
+  S, atk, bulk, cls, critCh, cdMul, equip, fmt, genItem, goldMul, isUpgrade, itemKj, itemName, lvlOf, MAXL, maxHp,
+  here, power, qProg, qReward, quest, resetSave, save, score, sellVal, skCost, skF, stageLabel, xpNeed, type Item, type TrainKey,
 } from '../state';
 import { battle, castSkill, resetBattle, skillCd } from '../game/battle';
 import { drawHero, portraitBg } from '../art/hero';
@@ -37,8 +38,9 @@ function claimQuest() {
 
 export function renderTop() {
   const sp = $('spill');
-  sp.innerHTML = '<span>' + chap().name + '</span><b>' + stageLabel(S.stage) + '</b>' +
-    (S.bossFail ? '<button class="rbtn" id="retry">Босс</button>' : '<span class="prog">' + (battle.bossOn ? 'БОСС' : Math.min(10, S.kills) + '/10') + '</span>');
+  const tier = battle.tier === 'act' ? 'БОСС' : battle.tier === 'mini' ? 'СТРАЖ' : 'ВОЖАК';
+  sp.innerHTML = '<span>' + here().zone.name + '</span><b>' + stageLabel(S.stage) + '</b>' +
+    (S.bossFail ? '<button class="rbtn" id="retry">Босс</button>' : '<span class="prog">' + (battle.bossOn ? tier : Math.min(10, S.kills) + '/10') + '</span>');
   const rb = $b('retry'); if (rb) rb.onclick = () => { S.bossFail = false; S.kills = 10; resetBattle(); renderTop(); };
   $('nm').textContent = S.g ? HERO[S.g].name + ' · ' + cls().name : 'Ронин';
   drawAva(); hud();
@@ -211,13 +213,34 @@ function renderScroll() {
     <li><b>Класс = оружие.</b> Самурай, Сохэй, Лучник, Синоби. Падает только оружие своего класса.</li>
     <li><b>Две валюты.</b> Золото на тренировку, души 魂 на навыки.</li></ul>
     <div class="grades">${RN.map((n, i) => `<span class="grade" style="color:${RC[i]}">${n} ×${RM[i]}</span>`).join('')}</div></div>
-  <div class="scroll"><span class="lbl">Главы</span><ul>${CHAPTERS.map((c, i) => `<li><b>${i + 1}. ${c.name}</b> · босс ${c.bossName}</li>`).join('')}</ul></div>
+  <div class="scroll"><span class="lbl">Акты</span><ul class="acts">${ACTS.map((a, i) => {
+    const open = S.best > i * ACT_STAGES, done = S.best > (i + 1) * ACT_STAGES;
+    return open ? `<li><b>${a.roman}. ${a.name}</b>${done ? ' ✓' : ''}<br><small>${a.zones.map(z => z.name).join(' → ')} · босс ${a.boss.name}</small> <button class="mini" data-act="${i}">История</button></li>`
+      : `<li class="locked"><b>${a.roman}. ???</b><br><small>Откроется после акта ${ACTS[i - 1].roman}</small></li>`;
+  }).join('')}<li class="locked"><b>VI. Гора Осорэ</b><br><small>Скоро</small></li></ul></div>
   <div class="scroll"><span class="lbl">Прогресс</span><button id="wipe">Стереть прогресс</button></div>`;
+  document.querySelectorAll<HTMLButtonElement>('[data-act]').forEach(b => { b.onclick = () => showIntro(+b.dataset.act!); });
   const wb = $b('wipe')!;
   wb.onclick = () => {
     if (!wb.dataset.c) { wb.dataset.c = '1'; wb.textContent = 'Точно стереть? Нажми ещё раз'; return; }
     resetSave(); resetBattle(); setTab('grow'); renderSkills(); renderTop(); openPicker('gender');
   };
+}
+
+/** story card shown once when the hero enters a new act */
+function maybeIntro() {
+  const n = Math.floor((S.stage - 1) / ACT_STAGES);
+  if (!S.g || !S.cls || n <= S.seenAct || !$('picker').hidden) return;
+  S.seenAct = n; save(); showIntro(n % ACTS.length);
+}
+function showIntro(i: number) {
+  const a = ACTS[i], z = a.zones[0];
+  $('picker').hidden = false;
+  $('pinner').innerHTML = `<div class="intro" style="--sky0:${z.sky[0]};--sky1:${z.sky[1]};--moon:${z.moon}">
+    <span class="lbl">Акт ${a.roman}</span><h2>${a.name}</h2>${a.story.map(p => `<p>${p}</p>`).join('')}
+    <ul>${a.zones.map((zz, k) => `<li><b>${k + 1}.</b> ${zz.name}${zz.mini ? ' · страж ' + zz.mini.name : ''}</li>`).join('')}<li><b>Босс:</b> ${a.boss.name}</li></ul>
+    <button class="cta" id="go">В путь</button></div>`;
+  $b('go')!.onclick = () => { $('picker').hidden = true; };
 }
 
 export function openPicker(step: 'gender' | 'class', single = false) {
@@ -230,7 +253,7 @@ export function openPicker(step: 'gender' | 'class', single = false) {
       cvs.width = Math.round((r.width || 180) * k); cvs.height = Math.round((r.width || 180) * 4 / 3 * k);
       const c = cvs.getContext('2d')!, w = cvs.width, h = cvs.height;
       portraitBg(c, w, h, g); drawHero(c, w * 0.48, h * 0.93, w / 112, {}, { g, t: 0, run: false, anim: 0, wt: 'katana' });
-      $b('g-' + g)!.onclick = () => { S.g = g; save(); if (single || S.cls) { $('picker').hidden = true; renderTop(); renderPanel(); } else openPicker('class'); };
+      $b('g-' + g)!.onclick = () => { S.g = g; save(); if (single || S.cls) { $('picker').hidden = true; renderTop(); renderPanel(); maybeIntro(); } else openPicker('class'); };
     });
     return;
   }
@@ -246,7 +269,7 @@ export function openPicker(step: 'gender' | 'class', single = false) {
         if (own) equip(own);
         else { const w = genItem('weapon', Math.max(1, S.stage - 1), 0, 1); w.r = 0; w.atk = Math.round((4 + S.stage * 3) * 0.9); w.pow = w.atk; S.eq.weapon = w; }
       }
-      skillCd.fill(0); save(); $('picker').hidden = true; renderSkills(); renderTop(); renderPanel();
+      skillCd.fill(0); save(); $('picker').hidden = true; renderSkills(); renderTop(); renderPanel(); maybeIntro();
     };
     $('clslist').appendChild(b);
   });
@@ -260,12 +283,13 @@ export function initUI() {
   on('skills', renderSkills);
   on('loot', () => { if (tab === 'gear') renderPanel(); else updateDots(); });
   on('progress', () => { if (tab === 'grow') renderPanel(); });
+  on('act', maybeIntro);
   window.addEventListener('resize', () => { if (tab === 'gear') drawDoll(); });
   if (document.fonts) document.fonts.ready.then(() => { drawAva(); if (tab === 'gear') drawDoll(); });
 
   let t0: string = 'grow';
   try { t0 = localStorage.getItem('yomi-tab') || 'grow'; } catch { /* storage blocked */ }
   renderSkills(); setTab((t0 in TABS ? t0 : 'grow') as Tab); renderTop();
-  if (!S.g) openPicker('gender'); else if (!S.cls) openPicker('class');
+  if (!S.g) openPicker('gender'); else if (!S.cls) openPicker('class'); else maybeIntro();
   setInterval(hud, 250);
 }

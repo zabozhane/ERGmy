@@ -1,4 +1,4 @@
-// Static game data: classes, weapons, slots, chapters, enemies, quests.
+// Static game data: classes, weapons, slots, quests. Acts and enemies live in acts.ts.
 
 export const W = 540, H = 380, GROUND = 322, PX = 118;
 
@@ -58,26 +58,6 @@ export const CLASSES: ClassDef[] = [
       { id: 'clone', kj: '影', name: 'Теневой клон', cd: 20, lvl: 10, desc: 'Двойные броски на 7 с' }] },
 ];
 
-export type FoeKind = 'kappa' | 'tanuki' | 'oni' | 'tengu' | 'yurei';
-export interface Chapter {
-  name: string; sky: [string, string]; far: string; near: string; ground: string;
-  part: 'leaf' | 'petal' | 'fog' | 'snow' | 'ember'; prop: 'bamboo' | 'torii' | 'castle' | 'pine' | 'volcano' | 'gate';
-  foes: FoeKind[]; boss: FoeKind; bossName: string;
-}
-export const CHAPTERS: Chapter[] = [
-  { name: 'Бамбуковая роща', sky: ['#1c2b2a', '#3d5a48'], far: '#22382f', near: '#1a2b24', ground: '#2a2d26', part: 'leaf', prop: 'bamboo', foes: ['kappa', 'tanuki'], boss: 'tanuki', bossName: 'Тануки Бумбуку' },
-  { name: 'Дорога Кисо', sky: ['#2a1a2e', '#e0587f'], far: '#5a2a4a', near: '#3a1c35', ground: '#2b1f2c', part: 'petal', prop: 'torii', foes: ['tengu', 'oni'], boss: 'tengu', bossName: 'Содзёбо, король тэнгу' },
-  { name: 'Замок в тумане', sky: ['#1b1e2a', '#4b4f5e'], far: '#2b2f3d', near: '#21242f', ground: '#262630', part: 'fog', prop: 'castle', foes: ['yurei', 'tanuki'], boss: 'yurei', bossName: 'Безголовый даймё' },
-  { name: 'Снежный перевал', sky: ['#1b2740', '#7f93b4'], far: '#4d5f82', near: '#30405e', ground: '#c9d3e2', part: 'snow', prop: 'pine', foes: ['yurei', 'oni'], boss: 'yurei', bossName: 'Юки-онна' },
-  { name: 'Остров вулкана', sky: ['#2a0c10', '#b3242c'], far: '#5a1418', near: '#3a0e12', ground: '#2a1416', part: 'ember', prop: 'volcano', foes: ['oni', 'tengu'], boss: 'oni', bossName: 'Сютэн-додзи' },
-  { name: 'Врата Ёми', sky: ['#140f22', '#4a2c5e'], far: '#2a1d3e', near: '#1d1430', ground: '#1f1a2a', part: 'ember', prop: 'gate', foes: ['oni', 'yurei', 'tengu', 'kappa'], boss: 'oni', bossName: 'Идзанами' },
-];
-
-export const FOE: Record<FoeKind, { col: string; r: number }> = {
-  kappa: { col: '#6f9f6a', r: 19 }, tanuki: { col: '#9b744d', r: 21 }, oni: { col: '#c4544e', r: 24 },
-  tengu: { col: '#c94a45', r: 21 }, yurei: { col: '#d8dbe6', r: 20 },
-};
-
 export type QuestKind = 'kill' | 'atk' | 'hp' | 'equip' | 'boss' | 'skill' | 'stage';
 export interface Quest { k: QuestKind; n: number; txt: string }
 export const QUESTS: Quest[] = [
@@ -87,5 +67,5 @@ export const QUESTS: Quest[] = [
   { k: 'boss', n: 1, txt: 'Победи босса' },
   { k: 'skill', n: 5, txt: 'Используй навыки 5 раз' },
   { k: 'hp', n: 10, txt: 'Тренируй здоровье до 10 ур.' },
-  { k: 'stage', n: 12, txt: 'Дойди до этапа 2-2' },
+  { k: 'stage', n: 12, txt: 'Дойди до этапа I · 2-2' },
 ];
