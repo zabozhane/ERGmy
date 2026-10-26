@@ -2,6 +2,7 @@
 // Everything faces left, towards the hero. Origin is the foe's feet on the ground line.
 import { GROUND } from '../data';
 import { inkColor, type BossKind, type FoeKind } from '../acts';
+import { drawSprite, hasSprite } from './sprites';
 
 type Ctx = CanvasRenderingContext2D;
 export interface FoeLook { kind: FoeKind; x: number; r: number; col: string; ph: number; hitT: number; stun: number; boss?: string; hp: number; max: number; lift: number }
@@ -34,7 +35,8 @@ export function drawFoe(c: Ctx, e: FoeLook) {
   const r = e.r, kd = e.kind, hover = kd === 'yurei' ? Math.sin(e.ph) * 4 - 8 : 0, bob = Math.sin(e.ph) * 1.5, col = e.col;
   c.save(); c.translate(e.x, GROUND + bob + hover - e.lift); if (e.hitT > 0) c.globalAlpha = 0.6;
   c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(0, -hover + e.lift, r * 0.9 * (e.lift ? 0.6 : 1), r * 0.18, 0, 0, 7); c.fill();
-  if (kd === 'kappa') {
+  if (hasSprite(kd)) drawSprite(c, kd, r, { breath: Math.sin(e.ph * 1.3), lean: Math.sin(e.ph * 1.6) * 0.03, grey: ink });
+  else if (kd === 'kappa') {
     c.fillStyle = k('#6b4a2e'); c.beginPath(); c.ellipse(-r * 0.45, -r, r * 0.6, r * 0.8, 0, 0, 7); c.fill();
     c.fillStyle = col; c.beginPath(); c.ellipse(0, -r * 0.95, r * 0.75, r * 0.9, 0, 0, 7); c.fill();
     c.fillStyle = k('#d9d58f'); c.beginPath(); c.ellipse(-r * 0.05, -r * 1.78, r * 0.45, r * 0.14, 0, 0, 7); c.fill();
@@ -164,7 +166,11 @@ export function drawBoss(c: Ctx, b: BossLook) {
   c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(0, b.lift, r * 1.1, r * 0.2, 0, 0, 7); c.fill();
   if (b.hitT > 0) c.globalAlpha = 0.7;
 
-  if (b.kind === 'necro') {
+  if (hasSprite(b.kind)) {
+    // painted boss; phase two keeps the procedural smoke behind it
+    if (b.kind === 'necro' && b.phase) { c.save(); c.globalAlpha *= 0.5; for (let i = 0; i < 5; i++) { c.fillStyle = '#3fb8c4'; c.beginPath(); c.arc(Math.sin(t + i * 1.3) * r * 0.8, -r * (0.4 + i * 0.6), r * (0.5 + 0.15 * Math.sin(t * 2 + i)), 0, 7); c.fill(); } c.restore(); }
+    drawSprite(c, b.kind, r, { breath: Math.sin(t * 0.9), lean: b.cast > 0 ? -0.05 : Math.sin(t * 0.8) * 0.02 });
+  } else if (b.kind === 'necro') {
     // Kuroyama Seigen: indigo robe, white haori, long grey hair, turquoise smoke and skulls
     if (b.phase) { c.globalAlpha = 0.5; for (let i = 0; i < 5; i++) { c.fillStyle = '#3fb8c4'; c.beginPath(); c.arc(Math.sin(t + i * 1.3) * r * 0.8, -r * (0.4 + i * 0.6), r * (0.5 + 0.15 * Math.sin(t * 2 + i)), 0, 7); c.fill(); } c.globalAlpha = 1; }
     c.fillStyle = '#3a4a5e'; c.beginPath(); c.moveTo(-r * 0.4, -r * 2.75); c.quadraticCurveTo(r * 0.9, -r * 2.4, r * 0.75 + sway, -r * 1.2); c.lineTo(r * 0.2, -r * 2.2); c.fill();

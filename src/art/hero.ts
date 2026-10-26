@@ -2,9 +2,12 @@
 // every equipment slot already draws as its own layer so the swap is local.
 import { RC, type Gender, type WeaponType } from '../data';
 import type { Item, Save } from '../state';
+import { drawSprite, hasSprite } from './sprites';
+import { drawRig, hasRig } from './rig';
 
 type Ctx = CanvasRenderingContext2D;
-export interface HeroPose { g: Gender; t: number; run: boolean; anim: number; wt: WeaponType; smoke?: boolean }
+/** move: attack or skill being played, anim its remaining share (1 → 0); procedural: skip the static sprite, which has no gear */
+export interface HeroPose { g: Gender; t: number; run: boolean; anim: number; wt: WeaponType; move?: string; smoke?: boolean; procedural?: boolean }
 
 export function shade(hex: string, f: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -53,6 +56,11 @@ function tattoo(c: Ctx, y0: number) {
 }
 
 export function drawHero(c: Ctx, x: number, y: number, s: number, eq: Save['eq'], o: HeroPose) {
+  if (hasRig(o.g)) { // painted cut-out rig: animates and wears the gear
+    c.save(); c.translate(x, y); c.scale(s, s);
+    drawRig(c, eq, { g: o.g, t: o.t, run: o.run, wt: o.wt, move: o.move, p: o.anim > 0 ? 1 - o.anim : 0, smoke: o.smoke });
+    c.restore(); return;
+  }
   const g = o.g, t = o.t, run = o.run, ph = t * 13;
   const leg = run ? Math.sin(ph) : 0, bob = run ? -Math.abs(Math.sin(ph)) * 2.5 : 0;
   const A = eq.armor, Hm = eq.helm, Ar = eq.arms, L = eq.legs, Ch = eq.charm, Wp: Item | undefined = eq.weapon;
@@ -65,6 +73,14 @@ export function drawHero(c: Ctx, x: number, y: number, s: number, eq: Save['eq']
   // aura from an epic+ charm, banner from a legendary+ armor
   if (Ch && Ch.r >= 2) { const gr = c.createRadialGradient(0, -50, 4, 0, -50, 60); gr.addColorStop(0, RC[Ch.r] + '55'); gr.addColorStop(1, RC[Ch.r] + '00'); c.fillStyle = gr; c.beginPath(); c.arc(0, -50, 60, 0, 7); c.fill(); }
   if (A && A.r >= 3) { c.fillStyle = '#2a2020'; c.fillRect(-18, -124, 2, 56); c.fillStyle = RC[A.r]; c.fillRect(-34, -124, 16, 28); c.fillStyle = '#121729'; c.font = '12px "Zen Antique",serif'; c.textAlign = 'center'; c.fillText('侍', -26, -106); }
+  const swing = o.anim > 0 ? (-1.7 + (1 - o.anim) * 2.7) : (wt === 'yumi' ? 0 : -0.55);
+  if (!o.procedural && hasSprite('hero_' + g)) { // painted hero; the weapon in hand is still drawn by code
+    drawSprite(c, 'hero_' + g, 1, { breath: Math.sin(t * 2), lean: run ? Math.sin(ph) * 0.03 : (o.anim > 0 ? 0.06 : 0) });
+    // the painted hero already wears a sheathed katana: a blade or bow in hand only when it is used
+    if (o.anim > 0 || wt !== 'katana') { c.save(); c.translate(8, -50); drawWeapon(c, wt, Wp ? Wp.r : null, swing, t); c.restore(); }
+    if (o.smoke) { c.fillStyle = 'rgba(160,166,192,.35)'; c.beginPath(); c.arc(0, -50, 40, 0, 7); c.fill(); }
+    c.restore(); return;
+  }
   if (g === 'f') { // long silver hair and the katana on her back
     c.fillStyle = '#d9dce6'; c.beginPath(); c.moveTo(-8, -96); c.quadraticCurveTo(-24, -70, -30 + sway, -34); c.lineTo(-20 + sway, -36); c.quadraticCurveTo(-14, -64, -2, -80); c.fill();
     c.strokeStyle = '#f1f2f7'; c.lineWidth = 1.4;
@@ -136,7 +152,6 @@ export function drawHero(c: Ctx, x: number, y: number, s: number, eq: Save['eq']
     }
   }
   // front arm and weapon
-  const swing = o.anim > 0 ? (-1.7 + (1 - o.anim) * 2.7) : (wt === 'yumi' ? 0 : -0.55);
   c.save(); c.translate(6, -70);
   const armA = wt === 'yumi' ? -1.45 : (run ? leg * 0.5 : 0.2) + (o.anim > 0 ? -0.6 : 0); c.rotate(armA);
   if (Ar) { c.fillStyle = RC[Ar.r]; c.fillRect(-4, 0, 8, 20); c.fillStyle = '#231d1c'; for (let i = 0; i < 3; i++) c.fillRect(-4, 5 + i * 5, 8, 1.5); }
