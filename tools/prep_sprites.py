@@ -47,6 +47,7 @@ def clean(im, cut):
     a = a.point(lambda v: 0 if v < cut else v)
     if cut > 100:
         a = Image.composite(a, Image.new('L', a.size, 0), a.filter(ImageFilter.MinFilter(3)).point(lambda v: 255 if v else 0))
+    a = a.point(lambda v: 255 if v >= 250 else v)  # generator leaves bodies at 252-253
     im = Image.merge('RGBA', (r, g, b, a))
     box = a.point(lambda v: 255 if v > 8 else 0).getbbox()
     return im.crop(box) if box else im

@@ -5,9 +5,9 @@ type Ctx = CanvasRenderingContext2D;
 /** h: drawn height in foe radii (heroes: in px at scale 1); dy: lift of the sprite bottom above the feet, in the same units */
 const DEFS: Record<string, { h: number; dy?: number }> = {
   hero_m: { h: 112 }, hero_f: { h: 108 },
-  kappa: { h: 2.3 }, tanuki: { h: 2.8 }, ashigaru: { h: 2.9 }, yurei: { h: 2.7 },
+  kappa: { h: 2.3 }, tanuki: { h: 2.8 }, ashigaru: { h: 3.3 }, yurei: { h: 2.7 },
   skull: { h: 2.4, dy: 0.2 }, onibi: { h: 2.4, dy: 0.1 },
-  oni: { h: 3 }, necro: { h: 2.9 },
+  oni: { h: 3 }, necro: { h: 3.3 },
 };
 
 const imgs: Record<string, HTMLImageElement> = {};

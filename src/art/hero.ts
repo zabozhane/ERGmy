@@ -70,7 +70,8 @@ export function drawHero(c: Ctx, x: number, y: number, s: number, eq: Save['eq']
   const swing = o.anim > 0 ? (-1.7 + (1 - o.anim) * 2.7) : (wt === 'yumi' ? 0 : -0.55);
   if (!o.procedural && hasSprite('hero_' + g)) { // painted hero; the weapon in hand is still drawn by code
     drawSprite(c, 'hero_' + g, 1, { breath: Math.sin(t * 2), lean: run ? Math.sin(ph) * 0.03 : (o.anim > 0 ? 0.06 : 0) });
-    c.save(); c.translate(8, -50); drawWeapon(c, wt, Wp ? Wp.r : null, swing, t); c.restore();
+    // the painted hero already wears a sheathed katana: a blade or bow in hand only when it is used
+    if (o.anim > 0 || wt !== 'katana') { c.save(); c.translate(8, -50); drawWeapon(c, wt, Wp ? Wp.r : null, swing, t); c.restore(); }
     if (o.smoke) { c.fillStyle = 'rgba(160,166,192,.35)'; c.beginPath(); c.arc(0, -50, 40, 0, 7); c.fill(); }
     c.restore(); return;
   }
