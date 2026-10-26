@@ -8,6 +8,9 @@ import {
 import { battle, castSkill, resetBattle, skillCd } from '../game/battle';
 import { drawHero, portraitBg } from '../art/hero';
 import { spritesReady } from '../art/sprites';
+import { rigReady } from '../art/rig';
+
+const artReady = Promise.all([spritesReady, rigReady]);
 import { on } from '../events';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -254,7 +257,7 @@ export function openPicker(step: 'gender' | 'class', single = false) {
       cvs.width = Math.round((r.width || 180) * k); cvs.height = Math.round((r.width || 180) * 4 / 3 * k);
       const c = cvs.getContext('2d')!, w = cvs.width, h = cvs.height;
       const paint = () => { portraitBg(c, w, h, g); drawHero(c, w * 0.48, h * 0.93, w / 112, {}, { g, t: 0, run: false, anim: 0, wt: 'katana' }); };
-      paint(); spritesReady.then(paint);
+      paint(); artReady.then(paint);
       $b('g-' + g)!.onclick = () => { S.g = g; save(); if (single || S.cls) { $('picker').hidden = true; renderTop(); renderPanel(); maybeIntro(); } else openPicker('class'); };
     });
     return;
@@ -288,7 +291,7 @@ export function initUI() {
   on('act', maybeIntro);
   window.addEventListener('resize', () => { if (tab === 'gear') drawDoll(); });
   if (document.fonts) document.fonts.ready.then(() => { drawAva(); if (tab === 'gear') drawDoll(); });
-  spritesReady.then(() => drawAva());
+  artReady.then(() => { drawAva(); if (tab === 'gear') drawDoll(); });
 
   let t0: string = 'grow';
   try { t0 = localStorage.getItem('yomi-tab') || 'grow'; } catch { /* storage blocked */ }

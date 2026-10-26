@@ -3,10 +3,11 @@
 import { RC, type Gender, type WeaponType } from '../data';
 import type { Item, Save } from '../state';
 import { drawSprite, hasSprite } from './sprites';
+import { drawRig, hasRig } from './rig';
 
 type Ctx = CanvasRenderingContext2D;
-/** procedural: force the drawn hero, which still shows every equipped piece (the gear tab) */
-export interface HeroPose { g: Gender; t: number; run: boolean; anim: number; wt: WeaponType; smoke?: boolean; procedural?: boolean }
+/** move: attack or skill being played, anim its remaining share (1 → 0); procedural: skip the static sprite, which has no gear */
+export interface HeroPose { g: Gender; t: number; run: boolean; anim: number; wt: WeaponType; move?: string; smoke?: boolean; procedural?: boolean }
 
 export function shade(hex: string, f: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -55,6 +56,11 @@ function tattoo(c: Ctx, y0: number) {
 }
 
 export function drawHero(c: Ctx, x: number, y: number, s: number, eq: Save['eq'], o: HeroPose) {
+  if (hasRig(o.g)) { // painted cut-out rig: animates and wears the gear
+    c.save(); c.translate(x, y); c.scale(s, s);
+    drawRig(c, eq, { g: o.g, t: o.t, run: o.run, wt: o.wt, move: o.move, p: o.anim > 0 ? 1 - o.anim : 0, smoke: o.smoke });
+    c.restore(); return;
+  }
   const g = o.g, t = o.t, run = o.run, ph = t * 13;
   const leg = run ? Math.sin(ph) : 0, bob = run ? -Math.abs(Math.sin(ph)) * 2.5 : 0;
   const A = eq.armor, Hm = eq.helm, Ar = eq.arms, L = eq.legs, Ch = eq.charm, Wp: Item | undefined = eq.weapon;
