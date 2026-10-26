@@ -7,6 +7,7 @@ import {
 } from '../state';
 import { battle, castSkill, resetBattle, skillCd } from '../game/battle';
 import { drawHero, portraitBg } from '../art/hero';
+import { spritesReady } from '../art/sprites';
 import { on } from '../events';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -185,7 +186,7 @@ function drawDoll() {
   const r = d.getBoundingClientRect(), k = window.devicePixelRatio || 1;
   d.width = Math.round((r.width || 200) * k); d.height = Math.round((r.width || 200) * 1.2 * k);
   const c = d.getContext('2d')!, w = d.width, h = d.height; portraitBg(c, w, h, S.g);
-  const s = w / 100; drawHero(c, w / 2 - 4 * s, h * 0.94, s, S.eq, { g: S.g, t: 0, run: false, anim: 0, wt: cls().w });
+  const s = w / 100; drawHero(c, w / 2 - 4 * s, h * 0.94, s, S.eq, { g: S.g, t: 0, run: false, anim: 0, wt: cls().w, procedural: true });
 }
 
 function renderSkillTab() {
@@ -252,7 +253,8 @@ export function openPicker(step: 'gender' | 'class', single = false) {
       const cvs = $('gc-' + g) as HTMLCanvasElement, r = cvs.getBoundingClientRect(), k = window.devicePixelRatio || 1;
       cvs.width = Math.round((r.width || 180) * k); cvs.height = Math.round((r.width || 180) * 4 / 3 * k);
       const c = cvs.getContext('2d')!, w = cvs.width, h = cvs.height;
-      portraitBg(c, w, h, g); drawHero(c, w * 0.48, h * 0.93, w / 112, {}, { g, t: 0, run: false, anim: 0, wt: 'katana' });
+      const paint = () => { portraitBg(c, w, h, g); drawHero(c, w * 0.48, h * 0.93, w / 112, {}, { g, t: 0, run: false, anim: 0, wt: 'katana' }); };
+      paint(); spritesReady.then(paint);
       $b('g-' + g)!.onclick = () => { S.g = g; save(); if (single || S.cls) { $('picker').hidden = true; renderTop(); renderPanel(); maybeIntro(); } else openPicker('class'); };
     });
     return;
@@ -286,6 +288,7 @@ export function initUI() {
   on('act', maybeIntro);
   window.addEventListener('resize', () => { if (tab === 'gear') drawDoll(); });
   if (document.fonts) document.fonts.ready.then(() => { drawAva(); if (tab === 'gear') drawDoll(); });
+  spritesReady.then(() => drawAva());
 
   let t0: string = 'grow';
   try { t0 = localStorage.getItem('yomi-tab') || 'grow'; } catch { /* storage blocked */ }
