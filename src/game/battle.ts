@@ -7,6 +7,7 @@ import {
   maxHp, qTick, rt, save, sellVal, skF, stageLabel, xpNeed, type Item,
 } from '../state';
 import { drawHero } from '../art/hero';
+import { MOVES, drawFx } from '../art/rig';
 import { drawBoss, drawFoe, setInk } from '../art/foes';
 import { drawWorld, stepParticles, type Particle } from '../art/world';
 import { emit } from '../events';
@@ -31,6 +32,8 @@ interface Fight {
 let enemies: Enemy[] = [], shots: Shot[] = [], texts: FloatText[] = [], slashes: Slash[] = [], drops: Drop[] = [], fx: Fx[] = [];
 const parts: Particle[] = Array.from({ length: 30 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 2, v: 0.3 + Math.random() * 0.7, ph: Math.random() * 6 }));
 let scroll = 0, atkTimer = 0, hurtTimer = 0, anim = 0, flash = 0;
+/** what the hero is playing (weapon type for a plain attack, skill id for a skill) and how fast anim runs out */
+let move = '', animRate = 4;
 let fight: Fight | null = null;
 export const battle = { bossOn: false, bossT: 0, name: '', tier: 'stage' as BossTier };
 export const skillCd = [0, 0, 0];
@@ -202,7 +205,7 @@ function attack() {
   const w = curW();
   const tgt = enemies.filter(e => e.x - PX <= w.range && e.x > PX - 30);
   if (!tgt.length || atkTimer > 0) return;
-  atkTimer = w.cd * cdMul(); anim = 1;
+  atkTimer = w.cd * cdMul(); anim = 1; move = S.eq.weapon?.wt || cls().w; animRate = 4;
   if (w.kind === 'melee') { damage(tgt[0], 1); slashes.push({ t: 1, r: 58, col: '#efe7d4' }); }
   else if (w.kind === 'sweep') { tgt.forEach(e => damage(e, 1)); slashes.push({ t: 1, r: 105, col: '#efe7d4' }); }
   else if (w.kind === 'arrow') fire('arrow', 1);
@@ -232,14 +235,14 @@ export function castSkill(i: number) {
     case 'smoke': buffs.smoke = t + 3 + dur; inR(140).forEach(e => damage(e, 2 * f)); fx.push({ x: PX, y: GROUND - 40, t: 1, smoke: true }); break;
     case 'clone': buffs.clone = t + 7 + dur; float(PX, GROUND - 130, 'Теневой клон', '#a678dc', true); break;
   }
-  if (used) { skillCd[i] = sk.cd; anim = 1; qTick('skill'); }
+  if (used) { skillCd[i] = sk.cd; anim = 1; move = sk.id; animRate = 1 / (MOVES[sk.id]?.dur || 0.25); qTick('skill'); }
 }
 
 export function update(dt: number) {
   rt.t += dt;
   while (enemies.length < 4 && !battle.bossOn) spawn();
   if (!enemies.length && battle.bossOn) endBoss();
-  atkTimer -= dt; hurtTimer -= dt; anim = Math.max(0, anim - dt * 4); flash = Math.max(0, flash - dt * 1.5);
+  atkTimer -= dt; hurtTimer -= dt; anim = Math.max(0, anim - dt * animRate); flash = Math.max(0, flash - dt * 1.5);
   for (let i = 0; i < 3; i++) skillCd[i] = Math.max(0, skillCd[i] - dt);
   if (S.auto) for (let i = 0; i < 3; i++) castSkill(i);
   const w = curW(); attack();
@@ -320,8 +323,8 @@ export function draw(ctx: CanvasRenderingContext2D) {
   });
   const stopped = enemies.some(e => e.x - PX < curW().range);
   if (S.g) {
-    drawHero(ctx, PX, GROUND, 1, S.eq, { g: S.g, t: rt.t, run: !stopped, anim, wt: cls().w, smoke: buffActive('smoke') });
-    if (buffActive('clone')) drawHero(ctx, PX - 30, GROUND, 1, S.eq, { g: S.g, t: rt.t + 0.2, run: !stopped, anim, wt: cls().w, smoke: true });
+    drawHero(ctx, PX, GROUND, 1, S.eq, { g: S.g, t: rt.t, run: !stopped, anim, move, wt: cls().w, smoke: buffActive('smoke') });
+    if (buffActive('clone')) drawHero(ctx, PX - 30, GROUND, 1, S.eq, { g: S.g, t: rt.t + 0.2, run: !stopped, anim, move, wt: cls().w, smoke: true });
   }
   for (const s of shots) {
     ctx.save(); ctx.translate(s.x, s.y);
@@ -334,7 +337,10 @@ export function draw(ctx: CanvasRenderingContext2D) {
     }
     ctx.restore();
   }
-  for (const s of slashes) { ctx.save(); ctx.globalAlpha = s.t; ctx.strokeStyle = s.col; ctx.lineWidth = s.wide ? 7 : 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(PX + 8, GROUND - 55, s.r, -1.2, 0.7); ctx.stroke(); ctx.restore(); }
+  for (const s of slashes) {
+    const fxName = s.col === '#ec6b90' ? 'fx_petals' : s.col === '#f6dc8f' ? 'fx_slash_gold' : 'fx_slash';
+    if (drawFx(ctx, fxName, PX + 10 + s.r * 0.45, GROUND - 58, s.r * (s.wide ? 1.9 : 1.6), s.t)) continue;
+    ctx.save(); ctx.globalAlpha = s.t; ctx.strokeStyle = s.col; ctx.lineWidth = s.wide ? 7 : 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(PX + 8, GROUND - 55, s.r, -1.2, 0.7); ctx.stroke(); ctx.restore(); }
   for (const f of fx) {
     ctx.save(); ctx.globalAlpha = Math.max(0, f.t);
     if (f.arrow) { ctx.strokeStyle = '#efe7d4'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f.x, f.y - 24); ctx.lineTo(f.x, f.y); ctx.stroke(); }
